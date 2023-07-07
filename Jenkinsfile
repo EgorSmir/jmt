@@ -1,5 +1,5 @@
 node {
    stage('Build') {
-         sh "echo Hello7"
+         sh "echo Hello6"
    }
 }
