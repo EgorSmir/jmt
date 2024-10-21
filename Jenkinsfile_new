@@ -15,4 +15,5 @@ node {
          contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "ci/jenkins/build-status/test_new"],
          statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
      ]);
+   }
 }
