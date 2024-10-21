@@ -3,3 +3,12 @@ node {
          sh "echo Hello from main NEW!"
    }
 }
+
+post {
+    success {
+        githubNotify context: 'Job 1', status: 'SUCCESS', description: 'Build succeeded'
+    }
+    failure {
+        githubNotify context: 'Job 1', status: 'FAILURE', description: 'Build failed'
+    }
+}
