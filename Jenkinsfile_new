@@ -1,18 +1,42 @@
+def setGitHubCommitStatus(context, state, message, commitSha = null) {
+    def params = [
+        $class: 'GitHubCommitStatusSetter',
+        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: context],
+        statusResultSource: [$class: 'ConditionalStatusResultSource', results: [
+            [$class: 'AnyBuildResult', state: state, message: message]
+        ]]
+    ]
+
+    if (commitSha) {
+        params['commitShaSource'] = [$class: 'ManuallyEnteredShaSource', sha: commitSha]
+    }
+
+    step(params)
+}
+
 node {
-   try{
-      stage('Build') {
-         sh "echo Hello from main NEW test!"
-      }
-      setBuildStatus("Build complete", "SUCCESS");
-   } catch (err) {
-        setBuildStatus("Build complete", "FAILURE");
+    try {
+        stage('Checkout') {
+            checkout scm
+        }
+
+        def commitSha = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
+        // Set initial commit status
+        setGitHubCommitStatus('Unique-Context-Job1', 'PENDING', 'Build started', commitSha)
+
+        stage('Build') {
+            // Your build steps
+            sh 'echo Building...'
+        }
+
+        // Set success status
+        setGitHubCommitStatus('Unique-Context-Job1', 'SUCCESS', 'Build succeeded', commitSha)
+
+    } catch (err) {
+        // Set failure status
+        setGitHubCommitStatus('Unique-Context-Job1', 'FAILURE', 'Build failed', commitSha)
         throw err
-   }
+    }
 }
-void setBuildStatus(String message, String state) {
-  step([
-      $class: "GitHubCommitStatusSetter",
-      contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "ci/jenkins/build-status/test_new"],
-      statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
-  ]);
-}
+
