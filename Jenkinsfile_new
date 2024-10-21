@@ -14,8 +14,14 @@ def setGitHubCommitStatus(context, state, message, commitSha = null) {
     step(params)
 }
 
+
 node {
     try {
+        stage('Cleanup') {
+            // Clean the workspace
+            deleteDir()
+        }
+
         stage('Checkout') {
             checkout scm
         }
