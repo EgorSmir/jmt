@@ -5,9 +5,19 @@ node {
 }
 post {
     success {
-        githubNotify context: 'Job 1', status: 'SUCCESS', description: 'Build succeeded'
+       setBuildStatus("Build complete", "SUCCESS");
     }
     failure {
-        githubNotify context: 'Job 1', status: 'FAILURE', description: 'Build failed'
+       setBuildStatus("Build complete", "FAILURE");
     }
+}
+
+
+void setBuildStatus(String message, String state) {
+  step([
+      $class: "GitHubCommitStatusSetter",
+      contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "ci/jenkins/build-status/test_new"],
+      errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+      statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
+  ]);
 }
