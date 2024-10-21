@@ -1,48 +1,47 @@
+def setGitHubCommitStatus(context, state, message, commitSha = null) {
+    def params = [
+        $class: 'GitHubCommitStatusSetter',
+        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: context],
+        statusResultSource: [$class: 'ConditionalStatusResultSource', results: [
+            [$class: 'AnyBuildResult', state: state, message: message]
+        ]]
+    ]
+
+    if (commitSha) {
+        params['commitShaSource'] = [$class: 'ManuallyEnteredShaSource', sha: commitSha]
+    }
+
+    step(params)
+}
+
+
 node {
     try {
-        stage('Checkout') {
-            // Ensure SCM is properly checked out
-            checkout scm
-            // Alternatively, specify the Git repository and credentials directly
-            // git url: 'https://github.com/your-org/your-repo.git', credentialsId: 'github-credentials'
+        stage('Cleanup') {
+            // Clean the workspace
+            deleteDir()
         }
 
-        // Retrieve the commit SHA
+        stage('Checkout') {
+            checkout scm
+        }
+
         def commitSha = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
-        // Set the initial commit status to 'PENDING'
-        setGitHubCommitStatus('build/jenkins', 'PENDING', 'Build started', commitSha)
+        // Set initial commit status
+        setGitHubCommitStatus('Unique-Context-Job1', 'PENDING', 'Build started', commitSha)
 
         stage('Build') {
             // Your build steps
             sh 'echo Building...'
         }
 
-        stage('Test') {
-            // Your test steps
-            sh 'echo Testing...'
-        }
-
-        // Set the commit status to 'SUCCESS' upon successful completion
-        setGitHubCommitStatus('build/jenkins', 'SUCCESS', 'Build succeeded', commitSha)
+        // Set success status
+        setGitHubCommitStatus('Unique-Context-Job1', 'SUCCESS', 'Build succeeded', commitSha)
 
     } catch (err) {
-        // Set the commit status to 'FAILURE' if an error occurs
-        setGitHubCommitStatus('build/jenkins', 'FAILURE', 'Build failed', commitSha)
+        // Set failure status
+        setGitHubCommitStatus('Unique-Context-Job1', 'FAILURE', 'Build failed', commitSha)
         throw err
     }
-}
-
-// Function to set GitHub commit status
-def setGitHubCommitStatus(context, state, message, commitSha) {
-    step([
-        $class: 'GitHubCommitStatusSetter',
-        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: context],
-        commitShaSource: [$class: 'ManuallyEnteredShaSource', sha: commitSha],
-        statusResultSource: [$class: 'ConditionalStatusResultSource', results: [
-            [$class: 'AnyBuildResult', state: state, message: message]
-        ]],
-        // Optionally, set the target URL to the build URL
-        statusBackrefSource: [$class: 'ManuallyEnteredBackrefSource', backref: env.BUILD_URL]
-    ])
 }
